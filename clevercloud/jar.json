@@ -1,0 +1,9 @@
+{
+  "build": {
+    "type": "maven",
+    "goal": "clean package -DskipTests -Dspring.profiles.active=production"
+  },
+  "deploy": {
+    "jarName": "target/plan_my_trip-0.0.1-SNAPSHOT.jar"
+  }
+}
