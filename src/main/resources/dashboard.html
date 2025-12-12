@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - PlanMyTrip</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<nav class="navbar navbar-dashboard">
+  <div class="container">
+    <div class="nav-brand">
+      <h1>✈️ PlanMyTrip</h1>
+    </div>
+    <div class="nav-links">
+      <span id="userName"></span>
+      <button onclick="logout()" class="btn-secondary">Cerrar Sesión</button>
+    </div>
+  </div>
+</nav>
+
+<div class="dashboard-container">
+  <div class="container">
+    <div class="dashboard-header">
+      <h2>Mis Itinerarios</h2>
+      <button onclick="showCreateModal()" class="btn-primary">+ Nuevo Itinerario</button>
+    </div>
+
+    <div id="itinerariosGrid" class="itinerarios-grid">
+      <!-- Los itinerarios se cargarán dinámicamente -->
+    </div>
+  </div>
+</div>
+
+<!-- Modal para crear itinerario -->
+<div id="createModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal()">&times;</span>
+    <h3>Crear Nuevo Itinerario</h3>
+    <form id="createItinerarioForm">
+      <div class="form-group">
+        <label for="titulo">Título del Viaje</label>
+        <input type="text" id="titulo" required placeholder="Ej: Vacaciones en Europa">
+      </div>
+      <div class="form-group">
+        <label for="descripcion">Descripción</label>
+        <textarea id="descripcion" rows="3" placeholder="Describe tu viaje..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="fechaInicio">Fecha Inicio</label>
+          <input type="date" id="fechaInicio" required>
+        </div>
+        <div class="form-group">
+          <label for="fechaFin">Fecha Fin</label>
+          <input type="date" id="fechaFin" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="presupuesto">Presupuesto Total</label>
+        <input type="number" id="presupuesto" step="0.01" placeholder="0.00">
+      </div>
+      <div class="form-group">
+        <label for="visibilidad">Visibilidad</label>
+        <select id="visibilidad">
+          <option value="PRIVADO">Privado</option>
+          <option value="PUBLICO">Público</option>
+        </select>
+      </div>
+      <div class="modal-buttons">
+        <button type="button" onclick="closeModal()" class="btn-secondary">Cancelar</button>
+        <button type="submit" class="btn-primary">Crear Itinerario</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+  // Verificar autenticación
+  const token = localStorage.getItem('token');
+  if (!token) {
+      window.location.href = '/login.html';
+  }
+
+  // Mostrar nombre de usuario
+  document.getElementById('userName').textContent = localStorage.getItem('userName') || 'Usuario';
+
+  // Cargar itinerarios al iniciar
+  loadItinerarios();
+
+  async function loadItinerarios() {
+      try {
+          const response = await fetch('/api/itinerarios', {
+              headers: {
+                  'Authorization': `Bearer ${token}`
+              }
+          });
+
+          if (response.ok) {
+              const itinerarios = await response.json();
+              displayItinerarios(itinerarios);
+          } else if (response.status === 401) {
+              logout();
+          }
+      } catch (error) {
+          console.error('Error cargando itinerarios:', error);
+      }
+  }
+
+  function displayItinerarios(itinerarios) {
+      const grid = document.getElementById('itinerariosGrid');
+
+      if (itinerarios.length === 0) {
+          grid.innerHTML = '<p class="no-data">No tienes itinerarios aún. ¡Crea tu primer viaje!</p>';
+          return;
+      }
+
+      grid.innerHTML = itinerarios.map(it => `
+          <div class="itinerario-card">
+              <div class="card-header">
+                  <h3>${it.titulo}</h3>
+                  <span class="badge badge-${it.visibilidad.toLowerCase()}">${it.visibilidad}</span>
+              </div>
+              <p class="card-description">${it.descripcion || 'Sin descripción'}</p>
+              <div class="card-info">
+                  <div class="info-item">
+                      <span class="icon">📅</span>
+                      <span>${formatDate(it.fechaInicio)} - ${formatDate(it.fechaFin)}</span>
+                  </div>
+                  <div class="info-item">
+                      <span class="icon">💰</span>
+                      <span>${it.presupuestoTotal || 0}</span>
+                  </div>
+                  <div class="info-item">
+                      <span class="icon">🎯</span>
+                      <span>${it.cantidadActividades || 0} actividades</span>
+                  </div>
+              </div>
+              <div class="card-actions">
+                  <button onclick="viewItinerario(${it.id})" class="btn-primary btn-sm">Ver Detalles</button>
+                  <button onclick="deleteItinerario(${it.id})" class="btn-danger btn-sm">Eliminar</button>
+              </div>
+          </div>
+      `).join('');
+  }
+
+  function showCreateModal() {
+      document.getElementById('createModal').style.display = 'block';
+  }
+
+  function closeModal() {
+      document.getElementById('createModal').style.display = 'none';
+      document.getElementById('createItinerarioForm').reset();
+  }
+
+  document.getElementById('createItinerarioForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const data = {
+          titulo: document.getElementById('titulo').value,
+          descripcion: document.getElementById('descripcion').value,
+          fechaInicio: document.getElementById('fechaInicio').value,
+          fechaFin: document.getElementById('fechaFin').value,
+          presupuestoTotal: parseFloat(document.getElementById('presupuesto').value) || 0,
+          visibilidad: document.getElementById('visibilidad').value
+      };
+
+      try {
+          const response = await fetch('/api/itinerarios', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify(data)
+          });
+
+          if (response.ok) {
+              closeModal();
+              loadItinerarios();
+          } else {
+              alert('Error al crear el itinerario');
+          }
+      } catch (error) {
+          alert('Error de conexión');
+      }
+  });
+
+  async function deleteItinerario(id) {
+      if (!confirm('¿Estás seguro de eliminar este itinerario?')) return;
+
+      try {
+          const response = await fetch(`/api/itinerarios/${id}`, {
+              method: 'DELETE',
+              headers: {
+                  'Authorization': `Bearer ${token}`
+              }
+          });
+
+          if (response.ok) {
+              loadItinerarios();
+          } else {
+              alert('Error al eliminar el itinerario');
+          }
+      } catch (error) {
+          alert('Error de conexión');
+      }
+  }
+
+  function viewItinerario(id) {
+      window.location.href = `/itinerario.html?id=${id}`;
+  }
+
+  function formatDate(dateStr) {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  function logout() {
+      localStorage.clear();
+      window.location.href = '/login.html';
+  }
+
+  // Cerrar modal al hacer clic fuera
+  window.onclick = function(event) {
+      const modal = document.getElementById('createModal');
+      if (event.target === modal) {
+          closeModal();
+      }
+  }
+</script>
+</body>
+</html>

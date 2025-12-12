@@ -1,0 +1,41 @@
+# Crea el archivo .gitignore
+cat > .gitignore << 'EOF'
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# VS Code
+.vscode/
+
+# MacOS
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+.env.local
+application-local.properties
+
+# MySQL (si tienes datos locales)
+mysql_data/
+
+# Spring Boot
+*.pid
+*.pid.lock
+.securekey
+
+# Docker (opcional)
+docker-compose.override.yml
+EOF

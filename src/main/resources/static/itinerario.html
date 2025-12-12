@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle Itinerario - PlanMyTrip</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .itinerario-detail {
+            padding: 2rem 0;
+        }
+        .detail-header {
+            background: var(--card-background);
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+        }
+        .detail-header h2 {
+            margin-bottom: 1rem;
+        }
+        .detail-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .info-box {
+            padding: 1rem;
+            background: var(--background);
+            border-radius: 8px;
+        }
+        .info-box label {
+            display: block;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+        .info-box .value {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+        .tab {
+            padding: 1rem 2rem;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-weight: 600;
+            color: var(--text-secondary);
+            position: relative;
+        }
+        .tab.active {
+            color: var(--primary-color);
+        }
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--primary-color);
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .actividades-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .actividad-item {
+            background: var(--card-background);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--primary-color);
+        }
+        .actividad-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+        .actividad-tipo {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .tipo-transporte { background: #DBEAFE; color: #1E40AF; }
+        .tipo-alojamiento { background: #FCE7F3; color: #9F1239; }
+        .tipo-comida { background: #FEF3C7; color: #92400E; }
+        .tipo-turismo { background: #D1FAE5; color: #065F46; }
+        .tipo-compras { background: #E0E7FF; color: #3730A3; }
+        .tipo-otros { background: #E5E7EB; color: #374151; }
+    </style>
+</head>
+<!--funcionalidad Actividad-->
+<!-- MODAL: Crear Actividad -->
+<div id="addActivityModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeActivityModal()">&times;</span>
+        <h3>Nueva Actividad</h3>
+
+        <form id="activityForm">
+            <div class="form-group">
+                <label>Título</label>
+                <input type="text" id="actTitulo" required>
+            </div>
+
+            <div class="form-group">
+                <label>Tipo de Actividad</label>
+                <select id="actTipo" required>
+                    <option value="TRANSPORTE">Transporte</option>
+                    <option value="ALOJAMIENTO">Alojamiento</option>
+                    <option value="COMIDA">Comida</option>
+                    <option value="TURISMO">Turismo</option>
+                    <option value="COMPRAS">Compras</option>
+                    <option value="OTROS">Otros</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Fecha</label>
+                <input type="date" id="actFecha" required>
+            </div>
+
+            <div class="form-group">
+                <label>Costo (opcional)</label>
+                <input type="number" id="actCosto" step="0.01">
+            </div>
+
+            <div class="form-group">
+                <label>Moneda</label>
+                <input type="text" id="actMoneda" maxlength="3" value="USD">
+            </div>
+
+            <div class="form-group">
+                <label>Ubicación</label>
+                <input type="text" id="actUbicacion">
+            </div>
+
+            <div class="form-group">
+                <label>Descripción</label>
+                <textarea id="actDescripcion"></textarea>
+            </div>
+
+            <div class="modal-buttons">
+                <button type="button" class="btn-secondary" onclick="closeActivityModal()">Cancelar</button>
+                <button type="submit" class="btn-primary">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .modal {
+display: none;
+position: fixed;
+z-index: 99;
+inset: 0;
+background: rgba(0,0,0,0.6);
+backdrop-filter: blur(2px);
+overflow: hidden;
+}
+
+.modal-content {
+background: #fff;
+width: 95%;
+max-width: 480px;
+max-height: 90vh;
+padding: 20px;
+margin: 5vh auto;
+border-radius: 12px;
+display: flex;
+flex-direction: column;
+}
+
+.modal-content h3 {
+margin-top: 0;
+}
+
+.modal-content form {
+flex: 1;
+overflow-y: auto;
+padding-right: 5px;
+}
+
+.modal-buttons {
+display: flex;
+justify-content: space-between;
+margin-top: 15px;
+padding-top: 10px;
+border-top: 1px solid #ddd;
+}
+
+.close {
+float: right;
+cursor: pointer;
+font-size: 22px;
+}
+</style>
+
+<!--cierre-->
+<body>
+<nav class="navbar navbar-dashboard">
+    <div class="container">
+        <div class="nav-brand">
+            <h1>✈️ PlanMyTrip</h1>
+        </div>
+        <div class="nav-links">
+            <a href="/dashboard.html">Mis Itinerarios</a>
+            <span id="userName"></span>
+            <button onclick="logout()" class="btn-secondary">Cerrar Sesión</button>
+        </div>
+    </div>
+</nav>
+
+<div class="itinerario-detail">
+    <div class="container">
+        <div class="detail-header">
+            <h2 id="itinerarioTitulo">Cargando...</h2>
+            <p id="itinerarioDescripcion"></p>
+            <div class="detail-info">
+                <div class="info-box">
+                    <label>Fecha Inicio</label>
+                    <div class="value" id="fechaInicio">-</div>
+                </div>
+                <div class="info-box">
+                    <label>Fecha Fin</label>
+                    <div class="value" id="fechaFin">-</div>
+                </div>
+                <div class="info-box">
+                    <label>Presupuesto Total</label>
+                    <div class="value" id="presupuesto">-</div>
+                </div>
+                <div class="info-box">
+                    <label>Actividades</label>
+                    <div class="value" id="cantidadActividades">0</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('actividades')">Actividades</button>
+            <button class="tab" onclick="showTab('destinos')">Destinos</button>
+            <button class="tab" onclick="showTab('chat')">Chat</button>
+        </div>
+
+        <div id="actividades" class="tab-content active">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+                <h3>Actividades</h3>
+                <button onclick="showAddActivityModal()" class="btn-primary">+ Nueva Actividad</button>
+            </div>
+            <div id="actividadesList" class="actividades-list">
+                <p class="no-data">Cargando actividades...</p>
+            </div>
+        </div>
+
+        <div id="destinos" class="tab-content">
+            <h3>Destinos</h3>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <div>
+                    <button class="btn-primary" onclick="showCreateDestinoModal()">+ Nuevo Destino</button>
+                    <button class="btn-secondary" onclick="loadAllDestinos()">Refrescar</button>
+                </div>
+                <div>
+                    <label><input type="checkbox" id="autoOrden" checked> Auto-orden incremental al agregar</label>
+                </div>
+            </div>
+
+            <div id="destinosTableContainer">
+                <!-- tabla de destinos GLOBAL -->
+                <table id="destinosTable" class="table">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>País</th>
+                        <th>Ciudad</th>
+                        <th>Acciones</th>
+                    </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <hr>
+
+            <h4>Destinos en este itinerario</h4>
+            <div id="itinerarioDestinosContainer">
+                <table id="itinerarioDestinosTable" class="table">
+                    <thead>
+                    <tr>
+                        <th>Orden</th>
+                        <th>Nombre</th>
+                        <th>País / Ciudad</th>
+                        <th>Acciones</th>
+                    </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <div style="margin-top:10px;">
+                    <button class="btn-primary" onclick="saveDestinoOrder()">Guardar Orden</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: crear/editar destino -->
+        <div id="destinoModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeDestinoModal()">&times;</span>
+                <h3 id="destinoModalTitle">Nuevo Destino</h3>
+
+                <form id="destinoForm">
+                    <input type="hidden" id="destinoId">
+                    <div class="form-group">
+                        <label>Nombre</label>
+                        <input type="text" id="destinoNombre" required>
+                    </div>
+                    <div class="form-group">
+                        <label>País</label>
+                        <input type="text" id="destinoPais" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Ciudad</label>
+                        <input type="text" id="destinoCiudad" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Descripción</label>
+                        <textarea id="destinoDescripcion"></textarea>
+                    </div>
+
+                    <div class="modal-buttons">
+                        <button type="button" class="btn-secondary" onclick="closeDestinoModal()">Cancelar</button>
+                        <button type="submit" class="btn-primary">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+
+        <div id="chat" class="tab-content">
+            <h3>Chat del Itinerario</h3>
+            <div id="chatMessages">
+                <p class="no-data">No hay mensajes aún</p>
+            </div>
+            <div style="margin-top: 1rem; display: flex; gap: 10px;">
+                <input id="chatInput" type="text" placeholder="Escribe un mensaje..."
+                       style="flex:1; padding:10px; border-radius:8px; border:1px solid #ccc;">
+                <button onclick="sendMessage()" class="btn-primary">Enviar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const itinerarioId = urlParams.get('id');
+    const token = localStorage.getItem('token');
+
+    if (!token || !itinerarioId) {
+        window.location.href = '/dashboard.html';
+    }
+
+    document.getElementById('userName').textContent = localStorage.getItem('userName') || 'Usuario';
+
+    loadItinerarioDetail();
+
+    async function loadItinerarioDetail() {
+        try {
+            const response = await fetch(`/api/itinerarios/${itinerarioId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                const itinerario = await response.json();
+                displayItinerarioDetail(itinerario);
+                loadActividades();
+            } else {
+                alert('Error al cargar el itinerario');
+                window.location.href = '/dashboard.html';
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error de conexión');
+        }
+    }
+
+    function displayItinerarioDetail(itinerario) {
+        document.getElementById('itinerarioTitulo').textContent = itinerario.titulo;
+        document.getElementById('itinerarioDescripcion').textContent = itinerario.descripcion || 'Sin descripción';
+        document.getElementById('fechaInicio').textContent = formatDate(itinerario.fechaInicio);
+        document.getElementById('fechaFin').textContent = formatDate(itinerario.fechaFin);
+        document.getElementById('presupuesto').textContent = `$${itinerario.presupuestoTotal || 0}`;
+        document.getElementById('cantidadActividades').textContent = itinerario.cantidadActividades || 0;
+    }
+
+    async function loadActividades() {
+        try {
+            const response = await fetch(`/api/actividades/itinerario/${itinerarioId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                const actividades = await response.json();
+                displayActividades(actividades);
+            }
+        } catch (error) {
+            console.error('Error loading activities:', error);
+        }
+    }
+
+    function displayActividades(actividades) {
+        const list = document.getElementById('actividadesList');
+
+        if (actividades.length === 0) {
+            list.innerHTML = '<p class="no-data">No hay actividades registradas</p>';
+            return;
+        }
+
+        list.innerHTML = actividades.map(act => `
+            <div class="actividad-item">
+                <div class="actividad-header">
+                    <div>
+                        <h4>${act.titulo}</h4>
+                        <span class="actividad-tipo tipo-${act.tipoActividad.toLowerCase()}">${act.tipoActividad}</span>
+                    </div>
+                    <div style="text-align: right;">
+                        <strong>$${act.costo || 0} ${act.moneda}</strong>
+                    </div>
+                </div>
+                <p>${act.descripcion || 'Sin descripción'}</p>
+                <div class="card-info">
+                    <div class="info-item">
+                        <span class="icon">📅</span>
+                        <span>${formatDateTime(act.fechaHoraInicio)}</span>
+                    </div>
+                    ${act.ubicacion ? `
+                    <div class="info-item">
+                        <span class="icon">📍</span>
+                        <span>${act.ubicacion}</span>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function showTab(tabName) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+
+        event.target.classList.add('active');
+        document.getElementById(tabName).classList.add('active');
+    }
+
+    function showAddActivityModal() {
+    document.getElementById('addActivityModal').style.display = 'block';
+}
+function closeActivityModal() {
+    document.getElementById('addActivityModal').style.display = 'none';
+    document.getElementById('activityForm').reset();
+}
+
+
+    function formatDate(dateStr) {
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    function formatDateTime(dateStr) {
+        const date = new Date(dateStr);
+        return date.toLocaleString('es-ES', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    function logout() {
+        localStorage.clear();
+        window.location.href = '/login.html';
+    }
+    <!--Actividad codigo-->
+document.getElementById('activityForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const fechaSolo = document.getElementById('actFecha').value;
+    const fechaConHora = `${fechaSolo}T09:00:00`;
+
+    const data = {
+        titulo: document.getElementById('actTitulo').value,
+        tipoActividad: document.getElementById('actTipo').value,
+        fechaHoraInicio: fechaConHora,
+        descripcion: document.getElementById('actDescripcion').value,
+        ubicacion: document.getElementById('actUbicacion').value,
+        costo: parseFloat(document.getElementById('actCosto').value) || 0,
+        moneda: document.getElementById('actMoneda').value.toUpperCase()
+    };
+
+try {
+const response = await fetch(`/api/actividades/itinerario/${itinerarioId}`, {
+method: 'POST',
+headers: {
+'Content-Type': 'application/json',
+'Authorization': `Bearer ${token}`
+},
+body: JSON.stringify(data)
+});
+
+if (response.ok) {
+closeActivityModal();
+loadActividades();
+} else {
+alert('Error al crear la actividad');
+}
+} catch (error) {
+alert('Error de conexión');
+}
+});
+
+    <!--Codigo del Chat-->
+    async function loadChat() {
+    try {
+        const res = await fetch(`/api/chat/${itinerarioId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!res.ok) return;
+
+        const mensajes = await res.json();
+        displayChat(mensajes);
+    } catch (err) {
+        console.error('Error chat:', err);
+    }
+}
+
+function displayChat(mensajes) {
+    const div = document.getElementById('chatMessages');
+
+    if (!mensajes || mensajes.length === 0) {
+        div.innerHTML = '<p class="no-data">No hay mensajes aún</p>';
+        return;
+    }
+
+    div.innerHTML = mensajes.map(m => `
+        <div class="msg ${m.emailUsuario === localStorage.getItem('email') ? 'msg-me' : 'msg-other'}">
+            ${m.mensaje}
+            <span class="msg-time">${formatDateTime(m.createdAt)}</span>
+        </div>
+    `).join('');
+
+    div.scrollTop = div.scrollHeight;
+}
+
+async function sendMessage() {
+    const text = document.getElementById('chatInput').value.trim();
+    if (!text) return;
+
+    await fetch(`/api/chat/${itinerarioId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ mensaje: text })
+    });
+
+    document.getElementById('chatInput').value = '';
+    loadChat();
+}
+
+setInterval(loadChat, 2500);
+
+    <!--Destino-->
+    /* --- Destinos: CRUD + asociar a itinerario + listar itinerario --- */
+
+async function loadAllDestinos() {
+    try {
+        const res = await fetch('/api/destinos', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error('No pudo cargar destinos');
+        const destinos = await res.json();
+        populateDestinosTable(destinos);
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+function populateDestinosTable(destinos) {
+    const tbody = document.querySelector('#destinosTable tbody');
+    tbody.innerHTML = destinos.map(d => `
+        <tr>
+            <td>${d.id}</td>
+            <td>${escapeHtml(d.nombre)}</td>
+            <td>${escapeHtml(d.pais)}</td>
+            <td>${escapeHtml(d.ciudad)}</td>
+            <td>
+                <button class="btn-primary btn-sm" onclick="addDestinoToItinerario(${d.id})">Agregar</button>
+                <button class="btn-secondary btn-sm" onclick="showEditDestinoModal(${d.id})">Editar</button>
+                <button class="btn-danger btn-sm" onclick="deleteDestino(${d.id})">Eliminar</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function showCreateDestinoModal() {
+    document.getElementById('destinoModalTitle').textContent = 'Nuevo Destino';
+    document.getElementById('destinoId').value = '';
+    document.getElementById('destinoForm').reset();
+    document.getElementById('destinoModal').style.display = 'block';
+}
+
+function showEditDestinoModal(id) {
+    // cargar destino
+    fetch(`/api/destinos/${id}`, { headers: { 'Authorization': `Bearer ${token}` } })
+        .then(r => r.json())
+        .then(d => {
+            document.getElementById('destinoModalTitle').textContent = 'Editar Destino';
+            document.getElementById('destinoId').value = d.id;
+            document.getElementById('destinoNombre').value = d.nombre;
+            document.getElementById('destinoPais').value = d.pais;
+            document.getElementById('destinoCiudad').value = d.ciudad;
+            document.getElementById('destinoDescripcion').value = d.descripcion || '';
+            document.getElementById('destinoModal').style.display = 'block';
+        })
+        .catch(e => console.error(e));
+}
+
+function closeDestinoModal() {
+    document.getElementById('destinoModal').style.display = 'none';
+    document.getElementById('destinoForm').reset();
+}
+
+// Crear / Editar destino
+document.getElementById('destinoForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('destinoId').value;
+    const payload = {
+        nombre: document.getElementById('destinoNombre').value,
+        pais: document.getElementById('destinoPais').value,
+        ciudad: document.getElementById('destinoCiudad').value,
+        descripcion: document.getElementById('destinoDescripcion').value
+    };
+
+    try {
+        const url = id ? `/api/destinos/${id}` : '/api/destinos';
+        const method = id ? 'PUT' : 'POST';
+        const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+            closeDestinoModal();
+            await loadAllDestinos();
+            await loadItinerarioDestinos(); // refresh itinerary list
+        } else {
+            const err = await res.json();
+            alert(err.message || 'Error guardando destino');
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Error de conexión');
+    }
+});
+
+async function deleteDestino(id) {
+    if (!confirm('¿Eliminar destino permanentemente? Esta acción eliminará el destino de todos los itinerarios.')) return;
+    try {
+        const res = await fetch(`/api/destinos/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            await loadAllDestinos();
+            await loadItinerarioDestinos();
+        } else {
+            const err = await res.json();
+            alert(err.message || 'Error eliminando destino');
+        }
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+// Agregar destino a itinerario
+async function addDestinoToItinerario(destinoId) {
+    try {
+        const auto = document.getElementById('autoOrden').checked;
+        let orden = 1;
+
+        if (auto) {
+            // pedir conteo actual para asignar orden = count + 1
+            const resp = await fetch(`/api/itinerario/${itinerarioId}/destinosCount`, { // opcional endpoint
+                headers: { 'Authorization': `Bearer ${token}` }
+            }).catch(()=>null);
+
+            if (resp && resp.ok) {
+                const c = await resp.json();
+                orden = (c.count || c) + 1;
+            } else {
+                // fallback: calcular desde la tabla
+                const rows = document.querySelectorAll('#itinerarioDestinosTable tbody tr');
+                orden = rows.length + 1;
+            }
+        } else {
+            orden = parseInt(prompt('Ingrese el número de orden:', '1')) || 1;
+        }
+
+        const res = await fetch(`/api/destinos/itinerario/${itinerarioId}/destino/${destinoId}?orden=${orden}`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+            await loadItinerarioDestinos();
+            showNotification('Destino agregado al itinerario', 'success');
+        } else {
+            const err = await res.json();
+            alert(err.message || 'Error agregando destino');
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Error de conexión');
+    }
+}
+
+// Cargar destinos del itinerario
+async function loadItinerarioDestinos() {
+    try {
+        const res = await fetch(`/api/destinos/itinerario/${itinerarioId}/destinos`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error('No pudo cargar destinos del itinerario');
+        const destinos = await res.json();
+        populateItinerarioDestinos(destinos);
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+function populateItinerarioDestinos(destinos) {
+    const tbody = document.querySelector('#itinerarioDestinosTable tbody');
+    tbody.innerHTML = destinos.map((d, idx) => `
+        <tr data-id="${d.id}">
+            <td>
+                <input class="input-order" type="number" value="${d.orden || (idx+1)}" />
+            </td>
+            <td>${escapeHtml(d.nombre)}</td>
+            <td>${escapeHtml(d.pais)} / ${escapeHtml(d.ciudad)}</td>
+            <td>
+                <button class="btn-danger btn-sm" onclick="removeDestinoFromItinerario(${d.id})">Quitar</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Quitar destino de itinerario
+async function removeDestinoFromItinerario(destinoId) {
+    if (!confirm('Quitar destino del itinerario?')) return;
+    try {
+        const res = await fetch(`/api/destinos/itinerario/${itinerarioId}/destino/${destinoId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            await loadItinerarioDestinos();
+            showNotification('Destino removido', 'success');
+        } else {
+            const err = await res.json();
+            alert(err.message || 'Error quitando destino');
+        }
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+// Guardar orden manual (reordenar)
+async function saveDestinoOrder() {
+    const rows = Array.from(document.querySelectorAll('#itinerarioDestinosTable tbody tr'));
+    const payload = rows.map(row => {
+        const id = parseInt(row.getAttribute('data-id'));
+        const orden = parseInt(row.querySelector('.input-order').value) || 1;
+        return { destinoId: id, orden };
+    });
+
+    try {
+        const res = await fetch(`/api/destinos/itinerario/${itinerarioId}/destinos/reorder`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+            await loadItinerarioDestinos();
+            showNotification('Orden actualizado', 'success');
+        } else {
+            const err = await res.json();
+            alert(err.message || 'Error guardando orden');
+        }
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+/* utility */
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>"'`=\/]/g, s => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','/':'&#x2F;','`':'&#x60;','=':'&#x3D;' }[s]));
+}
+
+/* Inicializar cargas */
+loadAllDestinos();
+loadItinerarioDestinos();
+
+
+</script>
+
+
+</body>
+</html>

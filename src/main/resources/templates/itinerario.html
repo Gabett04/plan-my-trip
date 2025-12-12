@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle Itinerario - PlanMyTrip</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .itinerario-detail {
+            padding: 2rem 0;
+        }
+        .detail-header {
+            background: var(--card-background);
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+        }
+        .detail-header h2 {
+            margin-bottom: 1rem;
+        }
+        .detail-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .info-box {
+            padding: 1rem;
+            background: var(--background);
+            border-radius: 8px;
+        }
+        .info-box label {
+            display: block;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+        .info-box .value {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+        .tab {
+            padding: 1rem 2rem;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-weight: 600;
+            color: var(--text-secondary);
+            position: relative;
+        }
+        .tab.active {
+            color: var(--primary-color);
+        }
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--primary-color);
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .actividades-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .actividad-item {
+            background: var(--card-background);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--primary-color);
+        }
+        .actividad-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+        .actividad-tipo {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .tipo-transporte { background: #DBEAFE; color: #1E40AF; }
+        .tipo-alojamiento { background: #FCE7F3; color: #9F1239; }
+        .tipo-comida { background: #FEF3C7; color: #92400E; }
+        .tipo-turismo { background: #D1FAE5; color: #065F46; }
+        .tipo-compras { background: #E0E7FF; color: #3730A3; }
+        .tipo-otros { background: #E5E7EB; color: #374151; }
+    </style>
+</head>
+<!--funcionalidad Actividad-->
+<!-- MODAL: Crear Actividad -->
+<div id="addActivityModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeActivityModal()">&times;</span>
+        <h3>Nueva Actividad</h3>
+
+        <form id="activityForm">
+            <div class="form-group">
+                <label>Título</label>
+                <input type="text" id="actTitulo" required>
+            </div>
+
+            <div class="form-group">
+                <label>Tipo de Actividad</label>
+                <select id="actTipo" required>
+                    <option value="TRANSPORTE">Transporte</option>
+                    <option value="ALOJAMIENTO">Alojamiento</option>
+                    <option value="COMIDA">Comida</option>
+                    <option value="TURISMO">Turismo</option>
+                    <option value="COMPRAS">Compras</option>
+                    <option value="OTROS">Otros</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Fecha y Hora</label>
+                <input type="datetime-local" id="actFecha" required>
+            </div>
+
+            <div class="form-group">
+                <label>Costo (opcional)</label>
+                <input type="number" id="actCosto" step="0.01">
+            </div>
+
+            <div class="form-group">
+                <label>Moneda</label>
+                <input type="text" id="actMoneda" maxlength="3" value="USD">
+            </div>
+
+            <div class="form-group">
+                <label>Ubicación</label>
+                <input type="text" id="actUbicacion">
+            </div>
+
+            <div class="form-group">
+                <label>Descripción</label>
+                <textarea id="actDescripcion"></textarea>
+            </div>
+
+            <div class="modal-buttons">
+                <button type="button" class="btn-secondary" onclick="closeActivityModal()">Cancelar</button>
+                <button type="submit" class="btn-primary">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 99;
+        left: 0; top: 0;
+        width: 100%; height: 100%;
+        background: rgba(0,0,0,0.6);
+    }
+
+    .modal-content {
+        background: white;
+        width: 400px;
+        padding: 20px;
+        margin: 10% auto;
+        border-radius: 12px;
+    }
+    .close {
+        float: right;
+        cursor: pointer;
+        font-size: 22px;
+    }
+</style>
+
+<!--cierre-->
+<body>
+<nav class="navbar navbar-dashboard">
+    <div class="container">
+        <div class="nav-brand">
+            <h1>✈️ PlanMyTrip</h1>
+        </div>
+        <div class="nav-links">
+            <a href="/dashboard.html">Mis Itinerarios</a>
+            <span id="userName"></span>
+            <button onclick="logout()" class="btn-secondary">Cerrar Sesión</button>
+        </div>
+    </div>
+</nav>
+
+<div class="itinerario-detail">
+    <div class="container">
+        <div class="detail-header">
+            <h2 id="itinerarioTitulo">Cargando...</h2>
+            <p id="itinerarioDescripcion"></p>
+            <div class="detail-info">
+                <div class="info-box">
+                    <label>Fecha Inicio</label>
+                    <div class="value" id="fechaInicio">-</div>
+                </div>
+                <div class="info-box">
+                    <label>Fecha Fin</label>
+                    <div class="value" id="fechaFin">-</div>
+                </div>
+                <div class="info-box">
+                    <label>Presupuesto Total</label>
+                    <div class="value" id="presupuesto">-</div>
+                </div>
+                <div class="info-box">
+                    <label>Actividades</label>
+                    <div class="value" id="cantidadActividades">0</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('actividades')">Actividades</button>
+            <button class="tab" onclick="showTab('destinos')">Destinos</button>
+            <button class="tab" onclick="showTab('chat')">Chat</button>
+        </div>
+
+        <div id="actividades" class="tab-content active">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+                <h3>Actividades</h3>
+                <button onclick="showAddActivityModal()" class="btn-primary">+ Nueva Actividad</button>
+            </div>
+            <div id="actividadesList" class="actividades-list">
+                <p class="no-data">Cargando actividades...</p>
+            </div>
+        </div>
+
+        <div id="destinos" class="tab-content">
+            <h3>Destinos</h3>
+            <div id="destinosList">
+                <p class="no-data">No hay destinos registrados</p>
+            </div>
+        </div>
+
+        <div id="chat" class="tab-content">
+            <h3>Chat del Itinerario</h3>
+            <div id="chatMessages">
+                <p class="no-data">No hay mensajes aún</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const itinerarioId = urlParams.get('id');
+    const token = localStorage.getItem('token');
+
+    if (!token || !itinerarioId) {
+        window.location.href = '/dashboard.html';
+    }
+
+    document.getElementById('userName').textContent = localStorage.getItem('userName') || 'Usuario';
+
+    loadItinerarioDetail();
+
+    async function loadItinerarioDetail() {
+        try {
+            const response = await fetch(`/api/itinerarios/${itinerarioId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                const itinerario = await response.json();
+                displayItinerarioDetail(itinerario);
+                loadActividades();
+            } else {
+                alert('Error al cargar el itinerario');
+                window.location.href = '/dashboard.html';
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error de conexión');
+        }
+    }
+
+    function displayItinerarioDetail(itinerario) {
+        document.getElementById('itinerarioTitulo').textContent = itinerario.titulo;
+        document.getElementById('itinerarioDescripcion').textContent = itinerario.descripcion || 'Sin descripción';
+        document.getElementById('fechaInicio').textContent = formatDate(itinerario.fechaInicio);
+        document.getElementById('fechaFin').textContent = formatDate(itinerario.fechaFin);
+        document.getElementById('presupuesto').textContent = `$${itinerario.presupuestoTotal || 0}`;
+        document.getElementById('cantidadActividades').textContent = itinerario.cantidadActividades || 0;
+    }
+
+    async function loadActividades() {
+        try {
+            const response = await fetch(`/api/actividades/itinerario/${itinerarioId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                const actividades = await response.json();
+                displayActividades(actividades);
+            }
+        } catch (error) {
+            console.error('Error loading activities:', error);
+        }
+    }
+
+    function displayActividades(actividades) {
+        const list = document.getElementById('actividadesList');
+
+        if (actividades.length === 0) {
+            list.innerHTML = '<p class="no-data">No hay actividades registradas</p>';
+            return;
+        }
+
+        list.innerHTML = actividades.map(act => `
+            <div class="actividad-item">
+                <div class="actividad-header">
+                    <div>
+                        <h4>${act.titulo}</h4>
+                        <span class="actividad-tipo tipo-${act.tipoActividad.toLowerCase()}">${act.tipoActividad}</span>
+                    </div>
+                    <div style="text-align: right;">
+                        <strong>$${act.costo || 0} ${act.moneda}</strong>
+                    </div>
+                </div>
+                <p>${act.descripcion || 'Sin descripción'}</p>
+                <div class="card-info">
+                    <div class="info-item">
+                        <span class="icon">📅</span>
+                        <span>${formatDateTime(act.fechaHoraInicio)}</span>
+                    </div>
+                    ${act.ubicacion ? `
+                    <div class="info-item">
+                        <span class="icon">📍</span>
+                        <span>${act.ubicacion}</span>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function showTab(tabName) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+
+        event.target.classList.add('active');
+        document.getElementById(tabName).classList.add('active');
+    }
+
+    function showAddActivityModal() {
+    document.getElementById('addActivityModal').style.display = 'block';
+}
+function closeActivityModal() {
+    document.getElementById('addActivityModal').style.display = 'none';
+    document.getElementById('activityForm').reset();
+}
+
+
+    function formatDate(dateStr) {
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    function formatDateTime(dateStr) {
+        const date = new Date(dateStr);
+        return date.toLocaleString('es-ES', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    function logout() {
+        localStorage.clear();
+        window.location.href = '/login.html';
+    }
+</script>
+<!--Actividad codigo-->
+document.getElementById('activityForm').addEventListener('submit', async (e) => {
+e.preventDefault();
+
+const data = {
+titulo: document.getElementById('actTitulo').value,
+tipoActividad: document.getElementById('actTipo').value,
+fechaHoraInicio: document.getElementById('actFecha').value,
+descripcion: document.getElementById('actDescripcion').value,
+ubicacion: document.getElementById('actUbicacion').value,
+costo: parseFloat(document.getElementById('actCosto').value) || 0,
+moneda: document.getElementById('actMoneda').value.toUpperCase()
+};
+
+try {
+const response = await fetch(`/api/actividades/itinerario/${itinerarioId}`, {
+method: 'POST',
+headers: {
+'Content-Type': 'application/json',
+'Authorization': `Bearer ${token}`
+},
+body: JSON.stringify(data)
+});
+
+if (response.ok) {
+closeActivityModal();
+loadActividades();
+} else {
+alert('Error al crear la actividad');
+}
+} catch (error) {
+alert('Error de conexión');
+}
+});
+
+</body>
+</html>
