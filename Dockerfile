@@ -27,4 +27,4 @@ HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
 EXPOSE ${PORT:-8080}
 
 # Comando de inicio
-CMD ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Dspring.profiles.active=production", "-jar", "app.jar"]
